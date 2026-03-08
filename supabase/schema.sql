@@ -76,7 +76,7 @@ alter table public.prediction_votes enable row level security;
 -- profiles policies
 create policy "profiles selectable by authenticated"
   on public.profiles for select
-  using (auth.role() = 'authenticated');
+  using (true);
 
 create policy "users can update own profile"
   on public.profiles for update
@@ -86,7 +86,7 @@ create policy "users can update own profile"
 -- predictions policies
 create policy "predictions readable by authenticated"
   on public.predictions for select
-  using (auth.role() = 'authenticated');
+  using (true);
 
 create policy "users can insert own predictions"
   on public.predictions for insert
@@ -105,7 +105,7 @@ create policy "point_logs readable by authenticated"
 -- prediction_votes policies
 create policy "prediction_votes readable by authenticated"
   on public.prediction_votes for select
-  using (auth.role() = 'authenticated');
+  using (true);
 
 create policy "users can insert own votes"
   on public.prediction_votes for insert

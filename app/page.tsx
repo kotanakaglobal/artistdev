@@ -36,42 +36,70 @@ export default function HomePage() {
   const [error, setError] = useState('');
 
   const fetchRecent = async () => {
+    setError('');
     const user = supabaseClient.auth.getUser();
     setCurrentUserId(user?.id ?? null);
 
-    const data = (await supabaseClient.select('predictions', '&order=created_at.desc&limit=10')) as PredictionRow[] | null;
-    const userIds = [...new Set((data ?? []).map((item: PredictionRow) => item.user_id))];
-    const predictionIds = [...new Set((data ?? []).map((item: PredictionRow) => item.id))];
+    try {
+      const predictionRows =
+        ((await supabaseClient.select('predictions', '&order=created_at.desc&limit=10')) as PredictionRow[] | null) ?? [];
+      console.log('[home] predictions fetch result', predictionRows);
 
-    const profiles = userIds.length
-      ? ((await supabaseClient.select('profiles', `&id=in.(${userIds.join(',')})`)) as Profile[] | null)
-      : [];
-
-    const votes = predictionIds.length
-      ? ((await supabaseClient.select('prediction_votes', `&prediction_id=in.(${predictionIds.join(',')})`)) as VoteRow[] | null)
-      : [];
-
-    const nameMap = new Map((profiles ?? []).map((profile: Profile) => [profile.id, profile.display_name ?? '名無しユーザー']));
-
-    const voteCountMap = new Map<string, { hit: number; miss: number }>();
-    (votes ?? []).forEach((voteRow: VoteRow) => {
-      const current = voteCountMap.get(voteRow.prediction_id) ?? { hit: 0, miss: 0 };
-      if (voteRow.vote) {
-        current.hit += 1;
-      } else {
-        current.miss += 1;
+      if (predictionRows.length === 0) {
+        setPredictions([]);
+        return;
       }
-      voteCountMap.set(voteRow.prediction_id, current);
-    });
 
-    setPredictions(
-      (data ?? []).map((item: PredictionRow) => ({
-        ...item,
-        display_name: nameMap.get(item.user_id) ?? '名無しユーザー',
-        hit_votes: voteCountMap.get(item.id)?.hit ?? 0,
-        miss_votes: voteCountMap.get(item.id)?.miss ?? 0
-      }))
-    );
+      const userIds = [...new Set(predictionRows.map((item: PredictionRow) => item.user_id))];
+      const predictionIds = [...new Set(predictionRows.map((item: PredictionRow) => item.id))];
+
+      let profiles: Profile[] = [];
+      try {
+        profiles =
+          userIds.length > 0
+            ? (((await supabaseClient.select('profiles', `&id=in.(${userIds.join(',')})`)) as Profile[] | null) ?? [])
+            : [];
+        console.log('[home] profiles fetch result', profiles);
+      } catch (profileError) {
+        console.warn('[home] profiles fetch failed. fallback name will be used.', profileError);
+      }
+
+      let votes: VoteRow[] = [];
+      try {
+        votes =
+          predictionIds.length > 0
+            ? (((await supabaseClient.select('prediction_votes', `&prediction_id=in.(${predictionIds.join(',')})`)) as VoteRow[] | null) ??
+              [])
+            : [];
+      } catch (voteError) {
+        console.warn('[home] votes fetch failed. fallback counts(0) will be used.', voteError);
+      }
+
+      const nameMap = new Map(
+        (profiles ?? []).map((profile: Profile) => [profile.id, profile.display_name ?? '名無しユーザー'])
+      );
+
+      const voteCountMap = new Map<string, { hit: number; miss: number }>();
+      votes.forEach((voteRow: VoteRow) => {
+        const current = voteCountMap.get(voteRow.prediction_id) ?? { hit: 0, miss: 0 };
+        if (voteRow.vote) current.hit += 1;
+        else current.miss += 1;
+        voteCountMap.set(voteRow.prediction_id, current);
+      });
+
+      setPredictions(
+        predictionRows.map((item: PredictionRow) => ({
+          ...item,
+          display_name: nameMap.get(item.user_id) ?? '名無しユーザー',
+          hit_votes: voteCountMap.get(item.id)?.hit ?? 0,
+          miss_votes: voteCountMap.get(item.id)?.miss ?? 0
+        }))
+      );
+    } catch (fetchError) {
+      console.error('[home] predictions fetch failed', fetchError);
+      setError('最近投稿の読み込みに失敗しました。');
+      setPredictions([]);
+    }
   };
 
   useEffect(() => {
@@ -88,15 +116,26 @@ export default function HomePage() {
     }
 
     try {
-      await supabaseClient.upsert(
+      const existingVote = (await supabaseClient.select(
         'prediction_votes',
-        {
+        `&prediction_id=eq.${predictionId}&user_id=eq.${user.id}&limit=1`
+      )) as VoteRow[] | null;
+
+      if (existingVote && existingVote.length > 0) {
+        const updated = await supabaseClient.update(
+          'prediction_votes',
+          { vote },
+          `prediction_id=eq.${predictionId}&user_id=eq.${user.id}`
+        );
+        console.log('[vote] updated existing vote', updated);
+      } else {
+        const inserted = await supabaseClient.insert('prediction_votes', {
           prediction_id: predictionId,
           user_id: user.id,
           vote
-        },
-        'prediction_id,user_id'
-      );
+        });
+        console.log('[vote] inserted new vote', inserted);
+      }
 
       const votes = (await supabaseClient.select('prediction_votes', `&prediction_id=eq.${predictionId}`)) as VoteRow[] | null;
       const hitCount = (votes ?? []).filter((v: VoteRow) => v.vote).length;
@@ -110,7 +149,8 @@ export default function HomePage() {
       );
 
       await fetchRecent();
-    } catch {
+    } catch (voteError) {
+      console.error('[vote] vote insert/update failed', voteError);
       setError('投票に失敗しました。時間をおいて再度お試しください。');
     }
   };
