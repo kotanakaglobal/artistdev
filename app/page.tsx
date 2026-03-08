@@ -35,6 +35,7 @@ export default function HomePage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [votingPredictionId, setVotingPredictionId] = useState<string | null>(null);
 
   const fetchRecent = async () => {
     setError('');
@@ -108,6 +109,8 @@ export default function HomePage() {
   }, []);
 
   const votePrediction = async (predictionId: string, vote: boolean) => {
+    if (votingPredictionId) return;
+
     setError('');
     setMessage('');
 
@@ -117,6 +120,7 @@ export default function HomePage() {
       return;
     }
 
+    setVotingPredictionId(predictionId);
     try {
       const existingVote = (await supabaseClient.select(
         'prediction_votes',
@@ -155,6 +159,8 @@ export default function HomePage() {
         return;
       }
       setError('投票に失敗しました。時間をおいて再度お試しください。');
+    } finally {
+      setVotingPredictionId(null);
     }
   };
 
@@ -204,11 +210,20 @@ export default function HomePage() {
                   <td>
                     {currentUserId ? (
                       <div className="nav">
-                        <button type="button" onClick={() => votePrediction(p.id, true)}>
-                          👍 バズった
+                        <button
+                          type="button"
+                          onClick={() => votePrediction(p.id, true)}
+                          disabled={votingPredictionId === p.id}
+                        >
+                          {votingPredictionId === p.id ? '送信中...' : '👍 バズった'}
                         </button>
-                        <button type="button" className="secondary" onClick={() => votePrediction(p.id, false)}>
-                          👎 バズってない
+                        <button
+                          type="button"
+                          className="secondary"
+                          onClick={() => votePrediction(p.id, false)}
+                          disabled={votingPredictionId === p.id}
+                        >
+                          {votingPredictionId === p.id ? '送信中...' : '👎 バズってない'}
                         </button>
                       </div>
                     ) : (

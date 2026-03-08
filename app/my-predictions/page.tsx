@@ -26,6 +26,7 @@ export default function MyPredictionsPage() {
   const [predictions, setPredictions] = useState<PredictionWithVotes[]>([]);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [deletingPredictionId, setDeletingPredictionId] = useState<string | null>(null);
 
   const fetchMine = async () => {
     setError('');
@@ -80,6 +81,8 @@ export default function MyPredictionsPage() {
   }, []);
 
   const deletePrediction = async (prediction: PredictionWithVotes) => {
+    if (deletingPredictionId) return;
+
     setError('');
     setMessage('');
 
@@ -97,6 +100,7 @@ export default function MyPredictionsPage() {
     const confirmed = window.confirm('この投稿を削除しますか？');
     if (!confirmed) return;
 
+    setDeletingPredictionId(prediction.id);
     try {
       await supabaseClient.delete('predictions', `id=eq.${prediction.id}&user_id=eq.${user.id}`);
       setMessage('投稿を削除しました。');
@@ -104,6 +108,8 @@ export default function MyPredictionsPage() {
     } catch (deleteError) {
       console.error('[my-predictions] delete failed', deleteError);
       setError('削除に失敗しました。時間をおいて再度お試しください。');
+    } finally {
+      setDeletingPredictionId(null);
     }
   };
 
@@ -141,8 +147,13 @@ export default function MyPredictionsPage() {
                 <td>{p.score_awarded}</td>
                 <td>{new Date(p.created_at).toLocaleString('ja-JP')}</td>
                 <td>
-                  <button type="button" className="secondary" onClick={() => deletePrediction(p)}>
-                    削除
+                  <button
+                    type="button"
+                    className="secondary"
+                    onClick={() => deletePrediction(p)}
+                    disabled={deletingPredictionId === p.id}
+                  >
+                    {deletingPredictionId === p.id ? '削除中...' : '削除'}
                   </button>
                 </td>
               </tr>
