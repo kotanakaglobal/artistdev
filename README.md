@@ -15,6 +15,7 @@
 4. 発掘者ランキング
 5. ポイント付与（既存ロジック: 的中時 100pt）
 6. 表示名変更（プロフィール設定）
+7. 自分の投稿削除（/my-predictions）
 
 ## 画面一覧
 - `/` トップ画面（サービス説明、最近投稿、投票UI、導線）
@@ -87,7 +88,7 @@ where id = 'USER_UUID_HERE';
 
 ## 投票ルール
 - 1ユーザーは1投稿に1票まで（`unique(prediction_id, user_id)`）
-- 既存票がある場合は `insert` ではなく `update` で上書き
+- 既に投票済みの場合は「すでに投票済みです。」を表示し、上書きしない
 - `vote=true` は 👍 バズった、`vote=false` は 👎 バズってない
 - 👍 が 10 票以上になると `predictions.result_status = 'hit'`
 - それ以外は `predictions.result_status = 'pending'`

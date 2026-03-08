@@ -108,5 +108,11 @@ export const supabaseClient = {
       headers: { Prefer: 'return=representation' },
       body: JSON.stringify(row)
     });
-  }
+  },
+  async delete(table: string, query: string) {
+    return restRequest(`${table}?${query}`, {
+      method: 'DELETE',
+      headers: { Prefer: 'return=representation' }
+    });
+  },
 };

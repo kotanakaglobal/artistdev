@@ -34,6 +34,7 @@ export default function HomePage() {
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
 
   const fetchRecent = async () => {
     setError('');
@@ -108,10 +109,11 @@ export default function HomePage() {
 
   const votePrediction = async (predictionId: string, vote: boolean) => {
     setError('');
-    const user = supabaseClient.auth.getUser();
+    setMessage('');
 
+    const user = supabaseClient.auth.getUser();
     if (!user) {
-      setError('投票するにはログインしてください。');
+      setError('ログインが必要です');
       return;
     }
 
@@ -121,21 +123,17 @@ export default function HomePage() {
         `&prediction_id=eq.${predictionId}&user_id=eq.${user.id}&limit=1`
       )) as VoteRow[] | null;
 
-      if (existingVote && existingVote.length > 0) {
-        const updated = await supabaseClient.update(
-          'prediction_votes',
-          { vote },
-          `prediction_id=eq.${predictionId}&user_id=eq.${user.id}`
-        );
-        console.log('[vote] updated existing vote', updated);
-      } else {
-        const inserted = await supabaseClient.insert('prediction_votes', {
-          prediction_id: predictionId,
-          user_id: user.id,
-          vote
-        });
-        console.log('[vote] inserted new vote', inserted);
+      if ((existingVote ?? []).length > 0) {
+        setMessage('すでに投票済みです。');
+        return;
       }
+
+      const inserted = await supabaseClient.insert('prediction_votes', {
+        prediction_id: predictionId,
+        user_id: user.id,
+        vote
+      });
+      console.log('[vote] inserted new vote', inserted);
 
       const votes = (await supabaseClient.select('prediction_votes', `&prediction_id=eq.${predictionId}`)) as VoteRow[] | null;
       const hitCount = (votes ?? []).filter((v: VoteRow) => v.vote).length;
@@ -150,7 +148,12 @@ export default function HomePage() {
 
       await fetchRecent();
     } catch (voteError) {
-      console.error('[vote] vote insert/update failed', voteError);
+      console.error('[vote] vote insert failed', voteError);
+      const errorMessage = voteError instanceof Error ? voteError.message : '';
+      if (errorMessage.includes('duplicate key value') || errorMessage.includes('prediction_votes_prediction_id_user_id_key')) {
+        setMessage('すでに投票済みです。');
+        return;
+      }
       setError('投票に失敗しました。時間をおいて再度お試しください。');
     }
   };
@@ -170,6 +173,7 @@ export default function HomePage() {
       <div className="card stack">
         <h2>最近の投稿</h2>
         {error && <p className="notice error">{error}</p>}
+        {message && <p className="notice success">{message}</p>}
         {predictions.length === 0 ? (
           <p>まだ投稿がありません。</p>
         ) : (

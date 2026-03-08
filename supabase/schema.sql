@@ -92,6 +92,10 @@ create policy "users can insert own predictions"
   on public.predictions for insert
   with check (auth.uid() = user_id);
 
+create policy "users can delete own predictions"
+  on public.predictions for delete
+  using (auth.uid() = user_id);
+
 create policy "users can update prediction status by votes"
   on public.predictions for update
   using (auth.role() = 'authenticated')
