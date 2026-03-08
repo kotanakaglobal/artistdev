@@ -26,6 +26,7 @@ export function Navigation() {
       <Link href="/submit">投稿</Link>
       <Link href="/my-predictions">自分の投稿</Link>
       <Link href="/ranking">ランキング</Link>
+      {isLoggedIn && <Link href="/settings">プロフィール設定</Link>}
       {isAdmin && <Link href="/admin">管理</Link>}
       {!isLoggedIn ? (
         <Link href="/login">ログイン</Link>

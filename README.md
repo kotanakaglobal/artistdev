@@ -1,6 +1,6 @@
 # Artist Scout MVP
 
-「これから来そうな音楽アーティスト」を記録し、後から管理者が的中判定して、発掘者ランキングを表示する MVP Web アプリです。
+「これから来そうな音楽アーティスト」を記録し、投票で的中判定して、発掘者ランキングを表示する MVP Web アプリです。
 
 ## 技術スタック
 - Next.js (App Router)
@@ -10,16 +10,18 @@
 
 ## 実装済み MVP 機能
 1. 記録機能（投稿）
-2. 的中判定（管理画面）
+2. 投票機能（👍 バズった / 👎 バズってない）
 3. 発掘者ランキング
-4. ポイント付与（的中時 100pt）
+4. ポイント付与（既存ロジック: 的中時 100pt）
+5. 表示名変更（プロフィール設定）
 
 ## 画面一覧
-- `/` トップ画面（サービス説明、最近投稿、導線）
+- `/` トップ画面（サービス説明、最近投稿、投票UI、導線）
 - `/login` メールログイン画面（メール+パスワード）
 - `/submit` 投稿画面（artist_name / artist_link）
 - `/my-predictions` 自分の投稿一覧
 - `/ranking` ランキング画面
+- `/settings` プロフィール設定（display_name 更新）
 - `/admin` 管理画面（admin 権限のみ）
 
 ## 必要環境
@@ -63,7 +65,7 @@ npm run dev
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 4. Deploy を実行。
-5. 
+
 ## 管理者ユーザーの作り方
 1. 通常ユーザーとしてサインアップ（`/login`）
 2. Supabase SQL Editor で次を実行（UUID は対象ユーザーの ID に置換）:
@@ -80,6 +82,13 @@ where id = 'USER_UUID_HERE';
   - `profiles`
   - `predictions`
   - `point_logs`
+  - `prediction_votes`
+
+## 投票ルール
+- 1ユーザーは1投稿に1票まで（`unique(prediction_id, user_id)`）
+- `vote=true` は 👍 バズった、`vote=false` は 👎 バズってない
+- 👍 が 10 票以上になると `predictions.result_status = 'hit'`
+- それ以外は `predictions.result_status = 'pending'`
 
 ## MVP 起動手順（初心者向け）
 1. `npm install`
@@ -87,8 +96,9 @@ where id = 'USER_UUID_HERE';
 3. `supabase/schema.sql` を実行
 4. `.env.local` を作成して URL / ANON KEY を設定
 5. `npm run dev`
-6. `/login` でメールログイン
+6. `/login` でログイン
 7. `/submit` で投稿
-8. 管理者に昇格後 `/admin` で判定
-9. `/ranking` でランキング確認
+8. `/` で投票
+9. `/settings` で表示名変更
+10. `/ranking` でランキング確認
 

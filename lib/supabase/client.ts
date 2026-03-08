@@ -95,6 +95,13 @@ export const supabaseClient = {
       body: JSON.stringify(row)
     });
   },
+  async upsert(table: string, row: Record<string, unknown>, conflictColumn: string) {
+    return restRequest(`${table}?on_conflict=${conflictColumn}`, {
+      method: 'POST',
+      headers: { Prefer: 'return=representation,resolution=merge-duplicates' },
+      body: JSON.stringify(row)
+    });
+  },
   async update(table: string, row: Record<string, unknown>, query: string) {
     return restRequest(`${table}?${query}`, {
       method: 'PATCH',
