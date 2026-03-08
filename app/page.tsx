@@ -14,7 +14,6 @@ type Prediction = {
   display_name: string;
 };
 
-codex/create-mvp-web-app-for-music-artist-predictions-vxi34v
 type PredictionRow = Omit<Prediction, 'display_name'>;
 
 type Profile = {
@@ -22,38 +21,38 @@ type Profile = {
   display_name: string | null;
 };
 
-
-main
 export default function HomePage() {
   const [predictions, setPredictions] = useState<Prediction[]>([]);
 
   useEffect(() => {
     const fetchRecent = async () => {
-codex/create-mvp-web-app-for-music-artist-predictions-vxi34v
-      const data = (await supabaseClient.select('predictions', '&order=created_at.desc&limit=10')) as PredictionRow[] | null;
-      const userIds = [...new Set((data ?? []).map((item: PredictionRow) => item.user_id))];
+      const data = (await supabaseClient.select(
+        'predictions',
+        '&order=created_at.desc&limit=10'
+      )) as PredictionRow[] | null;
+
+      const userIds = [
+        ...new Set((data ?? []).map((item: PredictionRow) => item.user_id)),
+      ];
+
       const profiles = userIds.length
-        ? ((await supabaseClient.select('profiles', `&id=in.(${userIds.join(',')})`)) as Profile[] | null)
+        ? ((await supabaseClient.select(
+            'profiles',
+            `&id=in.(${userIds.join(',')})`
+          )) as Profile[] | null)
         : [];
+
       const nameMap = new Map(
-        (profiles ?? []).map((profile: Profile) => [profile.id, profile.display_name ?? '名無しユーザー'])
+        (profiles ?? []).map((profile: Profile) => [
+          profile.id,
+          profile.display_name ?? '名無しユーザー',
+        ])
       );
 
       setPredictions(
         (data ?? []).map((item: PredictionRow) => ({
-
-      const data = await supabaseClient.select('predictions', '&order=created_at.desc&limit=10');
-      const userIds = [...new Set((data ?? []).map((item) => item.user_id))];
-      const profiles = userIds.length
-        ? await supabaseClient.select('profiles', `&id=in.(${userIds.join(',')})`)
-        : [];
-      const nameMap = new Map((profiles ?? []).map((p: { id: string; display_name: string }) => [p.id, p.display_name ?? '名無しユーザー']));
-
-      setPredictions(
-        (data ?? []).map((item: Omit<Prediction, 'display_name'>) => ({
-main
           ...item,
-          display_name: nameMap.get(item.user_id) ?? '名無しユーザー'
+          display_name: nameMap.get(item.user_id) ?? '名無しユーザー',
         }))
       );
     };
@@ -65,7 +64,9 @@ main
     <section className="stack">
       <div className="card stack">
         <h1>Artist Scout MVP</h1>
-        <p>これから来そうな音楽アーティストを記録し、後から的中判定して発掘者ランキングを競うサービスです。</p>
+        <p>
+          これから来そうな音楽アーティストを記録し、後から的中判定して発掘者ランキングを競うサービスです。
+        </p>
         <div className="nav">
           <Link href="/submit">投稿する</Link>
           <Link href="/ranking">ランキングを見る</Link>
@@ -93,15 +94,11 @@ main
                 <tr key={p.id}>
                   <td>{p.display_name}</td>
                   <td>{p.artist_name}</td>
-codex/create-mvp-web-app-for-music-artist-predictions-vxi34v
                   <td>
                     <a href={p.artist_link} target="_blank" rel="noreferrer">
                       {p.artist_link}
                     </a>
                   </td>
-
-                  <td><a href={p.artist_link} target="_blank" rel="noreferrer">{p.artist_link}</a></td>
-main
                   <td>{p.result_status}</td>
                   <td>{new Date(p.created_at).toLocaleString('ja-JP')}</td>
                 </tr>
