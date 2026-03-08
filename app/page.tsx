@@ -49,8 +49,8 @@ export default function HomePage() {
   return (
     <section className="stack">
       <div className="card stack">
-        <h1>Artist Scout MVP</h1>
-        <p>これから来そうな音楽アーティストを記録し、後から的中判定して発掘者ランキングを競うサービスです。</p>
+        <h1>Coming Artist Prediction</h1>
+        <p>これからバズりそうな音楽アーティストを投稿し、みんなで的中判定して発掘者ランキングを競うサービスです。</p>
         <div className="nav">
           <Link href="/submit">投稿する</Link>
           <Link href="/ranking">ランキングを見る</Link>
